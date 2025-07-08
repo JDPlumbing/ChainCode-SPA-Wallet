@@ -159,26 +159,37 @@ function renderWallet() {
 
 document.addEventListener('click', async (e) => {
   if (e.target.classList.contains('unlock-btn')) {
-    const index = e.target.dataset.index;
-    const card = getWallet()[index];
-    if (!card) return;
+const index = e.target.dataset.index;
+const card = getWallet()[index];
+if (!card) return;
 
-    const slug = card.public_slug || '';
-    const id = slug.replace(/-/g, '').toLowerCase(); // 🔑 Normalize
+const slug = card.public_slug || '';
+const id = slug.replace(/-/g, '').toLowerCase();
 
 let key = unlockWithKeychain(id);
 if (!key) {
-  key = prompt('Enter decryption key:');
+  key = prompt(`No key found for "${card.metadata.type}". Enter decryption key:`);
+}
+if (!key) return;
+
+try {
+  let encrypted = card.metadata.encrypted_value;
+
+  // 🧽 Normalize if needed
+  if (typeof encrypted === 'string') {
+    encrypted = JSON.parse(encrypted);
+  }
+  if (Array.isArray(encrypted)) {
+    encrypted = new Uint8Array(encrypted);
+  }
+
+  const decrypted = await decrypt(encrypted, key);
+  alert(`🔓 Value: ${new TextDecoder().decode(decrypted)}`);
+} catch (err) {
+  console.warn('Failed to decrypt with key:', key, err);
+  alert('❌ Failed to decrypt.');
 }
 
-
-    try {
-      const decrypted = await decrypt(card.metadata.encrypted_value, key);
-      alert(`🔓 Value: ${new TextDecoder().decode(decrypted)}`);
-    } catch (err) {
-      console.warn('Failed to decrypt with key:', key, err);
-      alert('❌ Failed to decrypt.');
-    }
   }
 });
 

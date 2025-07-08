@@ -13,6 +13,9 @@
     .tab-panel.active { display: block; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" type="image/png" />
+<meta name="theme-color" content="#00ffe1" />
 
 </head>
 <body>
@@ -85,5 +88,13 @@
   </main>
 
   <script type="module" src="main.js"></script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(() => console.log('✅ Service Worker registered'))
+      .catch(err => console.warn('⚠️ SW registration failed', err));
+  }
+</script>
+
 </body>
 </html>

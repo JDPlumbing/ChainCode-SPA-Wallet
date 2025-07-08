@@ -1,0 +1,216 @@
+:root {
+  --bg: #181a20;
+  --fg: #e6eaf3;
+  --accent: #00ffe1;
+  --accent2: #1e90ff;
+  --card-bg: #23262f;
+  --card-border: #2c2f38;
+  --input-bg: #23262f;
+  --input-border: #353945;
+  --input-focus: #00ffe1;
+  --shadow: 0 4px 32px rgba(0, 255, 225, 0.10), 0 1.5px 8px rgba(30,144,255,0.10);
+}
+
+body {
+  background: radial-gradient(ellipse at top left, var(--card-bg) 0%, var(--bg) 100%);
+  color: var(--fg);
+  font-family: 'Segoe UI', 'Roboto', Arial, system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 2rem;
+}
+
+h1, h2 {
+  text-align: center;
+  color: var(--accent);
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+h1 { font-size: 1.8rem; }
+h2 { font-size: 1.5rem; }
+
+.card, 
+form.card, 
+#chaincode-form, 
+.result-card,
+#key-list .card {
+  background: var(--card-bg);
+  color: var(--fg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+  transition: box-shadow 0.2s, all 0.2s ease;
+}
+
+.card {
+  padding: 2.2rem 2rem 2rem 2rem;
+  width: 370px;
+}
+
+.card:hover, #key-list .card:hover {
+  box-shadow: 0 0 0 2px var(--accent2), var(--shadow);
+}
+
+.result-card {
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 8px;
+  margin-top: 2rem;
+  font-family: inherit;
+  padding: 1rem;
+}
+
+.result-card code {
+  background: #333;
+  color: #ccc;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+label, form label {
+  display: block;
+  margin: 1rem 0 0.3rem;
+  font-size: 0.97rem;
+  color: #b1b8c7;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+input, select, form input, form select {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1.5px solid var(--input-border);
+  border-radius: 7px;
+  background: var(--input-bg);
+  color: var(--fg);
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+  transition: border 0.2s, box-shadow 0.2s;
+  outline: none;
+  box-shadow: none;
+}
+
+input:focus, select:focus, form input:focus, form select:focus {
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 2px rgba(0,255,225,0.12);
+}
+
+.lock {
+  font-size: 3.2rem;
+  text-align: center;
+  margin: 1.2rem 0 0.7rem 0;
+  color: var(--accent2);
+  filter: drop-shadow(0 0 6px #00ffe1aa);
+}
+
+button, form button, #key-list button {
+  width: 100%;
+  padding: 0.85rem;
+  margin-top: 1.2rem;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+  border: none;
+  border-radius: 7px;
+  font-weight: bold;
+  color: #181a20;
+  font-size: 1.08rem;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 8px rgba(0,255,225,0.08);
+  transition: background 0.2s, color 0.2s;
+}
+
+button:hover, button:focus, form button:hover, form button:focus, #key-list button:hover {
+  background: linear-gradient(90deg, var(--accent2) 0%, var(--accent) 100%);
+  color: #000;
+}
+
+#output {
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.checkbox-grid {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-bottom: 1rem;
+}
+
+.checkbox-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--fg);
+  font-weight: bold;
+}
+
+.card h3, #key-list .card h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: var(--accent2);
+  font-weight: 600;
+}
+
+.card p, #key-list .card p {
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
+  color: #ccc;
+}
+
+.card input.key-field, #key-list .card input.key-field {
+  width: 100%;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--fg);
+}
+
+#key-list .btn-row, .btn-row {
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+}
+
+.status {
+  font-weight: bold;
+  color: var(--accent);
+}
+.wallet-container,
+#key-list {
+  padding: 1rem;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+.card {
+  border: 1.5px solid var(--card-border);
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+  width: 100%;
+  box-sizing: border-box;
+}

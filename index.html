@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chaincode SPA</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .nav-tabs { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem; }
+    .nav-tabs button { padding: 0.6rem 1rem; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; background: var(--card-border); color: var(--fg); }
+    .nav-tabs button.active { background: var(--accent); color: black; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+</head>
+<body>
+  <main>
+    <h1>🔐 Chaincode Wallet (SPA)</h1>
+
+    <div class="nav-tabs">
+      <button data-tab="create" class="active">🧾 Create</button>
+      <button data-tab="wallet">🪪 Wallet</button>
+      <button data-tab="keychain">🔑 Keychain</button>
+      <button data-tab="import">📥 Import</button>
+    </div>
+
+    <section id="create" class="tab-panel active">
+      <div class="card">
+        <h2>Create Chaincode</h2>
+        <form id="card-form">
+          <label for="type">Data Type</label>
+          <select id="type">
+            <option value="email">Email</option>
+            <option value="phone">Phone</option>
+            <option value="name">Full Name</option>
+            <option value="address">Address</option>
+            <option value="dob">Date of Birth</option>
+            <option value="ssn">SSN</option>
+          </select>
+
+          <label for="value">Value</label>
+          <input type="text" id="value" placeholder="Enter value" />
+
+          <label for="visibility">Visibility</label>
+          <select id="visibility">
+            <option value="public">Public</option>
+            <option value="private" selected>Private</option>
+          </select>
+
+          <button type="submit">Generate Chaincode</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="wallet" class="tab-panel">
+      <div class="wallet-container">
+        <h2>My Wallet</h2>
+        <input type="file" id="fileInput" accept=".json" multiple />
+        <button id="import-wallet">📥 Import Wallet</button>
+        <div id="wallet-view"></div>
+        <button id="export-selected">📦 Export Selected</button>
+      </div>
+    </section>
+
+    <section id="keychain" class="tab-panel">
+      <div class="card">
+        <h2>My Keychain</h2>
+        <input type="file" id="import-keys" accept=".key.txt" multiple />
+        <div id="key-list"></div>
+        <button id="export-keys">Export All Keys</button>
+        <button id="clear-keys" class="danger">Clear Keychain</button>
+      </div>
+    </section>
+
+    <section id="import" class="tab-panel">
+      <div class="card">
+        <h2>Import Encrypted Bundle</h2>
+        <input type="file" id="bundleInput" accept=".enc" />
+        <button id="bundleImportBtn">🔓 Decrypt & Import</button>
+        <button id="selfCheck">🧪 Self-Check Wallet</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

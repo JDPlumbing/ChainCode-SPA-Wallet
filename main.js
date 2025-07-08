@@ -166,8 +166,11 @@ document.addEventListener('click', async (e) => {
     const slug = card.public_slug || '';
     const id = slug.replace(/-/g, '').toLowerCase(); // 🔑 Normalize
 
-    const key = unlockWithKeychain(id) || prompt('Enter decryption key:');
-    if (!key) return;
+let key = unlockWithKeychain(id);
+if (!key) {
+  key = prompt('Enter decryption key:');
+}
+
 
     try {
       const decrypted = await decrypt(card.metadata.encrypted_value, key);

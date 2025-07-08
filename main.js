@@ -161,16 +161,24 @@ document.addEventListener('click', async (e) => {
   if (e.target.classList.contains('unlock-btn')) {
     const index = e.target.dataset.index;
     const card = getWallet()[index];
-    const id = card.public_slug.replace(/-/g, '').toLowerCase();
+    if (!card) return;
+
+    const slug = card.public_slug || '';
+    const id = slug.replace(/-/g, '').toLowerCase(); // 🔑 Normalize
+
     const key = unlockWithKeychain(id) || prompt('Enter decryption key:');
+    if (!key) return;
+
     try {
-      const value = await decrypt(card.metadata.encrypted_value, key);
-      alert(`🔓 Value: ${decoder.decode(value)}`);
-    } catch {
+      const decrypted = await decrypt(card.metadata.encrypted_value, key);
+      alert(`🔓 Value: ${new TextDecoder().decode(decrypted)}`);
+    } catch (err) {
+      console.warn('Failed to decrypt with key:', key, err);
       alert('❌ Failed to decrypt.');
     }
   }
 });
+
 
 document.getElementById('export-selected').addEventListener('click', async () => {
   const cards = getWallet();

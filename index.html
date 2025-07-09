@@ -5,13 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chaincode SPA</title>
   <link rel="stylesheet" href="style.css" />
-  <style>
-    .nav-tabs { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem; }
-    .nav-tabs button { padding: 0.6rem 1rem; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; background: var(--card-border); color: var(--fg); }
-    .nav-tabs button.active { background: var(--accent); color: black; }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-  </style>
+
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon-192.png" type="image/png" />
@@ -27,24 +21,24 @@
       <button data-tab="wallet">🪪 Wallet</button>
       <button data-tab="keychain">🔑 Keychain</button>
       <button data-tab="import">📥 Import</button>
+      <button data-tab="howto">📘 How to Use</button>
     </div>
 
     <section id="create" class="tab-panel active">
       <div class="card">
         <h2>Create Chaincode</h2>
         <form id="card-form">
-          <label for="type">Data Type</label>
-          <select id="type">
-            <option value="email">Email</option>
-            <option value="phone">Phone</option>
-            <option value="name">Full Name</option>
-            <option value="address">Address</option>
-            <option value="dob">Date of Birth</option>
-            <option value="ssn">SSN</option>
-          </select>
+        <label for="type">Label (Type)</label>
+        <input type="text" id="type" placeholder="e.g. AWS_SECRET, Garage Code" />
 
-          <label for="value">Value</label>
-          <input type="text" id="value" placeholder="Enter value" />
+        <label for="expiration">Expiration Date (optional)</label>
+        <input type="date" id="expiration" />
+
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" rows="3" placeholder="Paste API keys, login notes, etc."></textarea>
+
+        <label for="value">Value</label>
+        <input type="text" id="value" placeholder="Enter value" />
 
           <label for="visibility">Visibility</label>
           <select id="visibility">
@@ -58,7 +52,7 @@
     </section>
 
     <section id="wallet" class="tab-panel">
-      <div class="wallet-container">
+      <div class="card wallet-container">
         <h2>My Wallet</h2>
         <input type="file" id="fileInput" accept=".json" multiple />
         <button id="import-wallet">📥 Import Wallet</button>
@@ -74,6 +68,8 @@
       <div class="card">
         <h2>My Keychain</h2>
         <input type="file" id="import-keys" accept=".key.txt" multiple />
+        <label for="import-keys" class="file-label">Import Keys</label>
+
         <div id="key-list"></div>
         <button id="export-keys">Export All Keys</button>
         <button id="clear-keys" class="danger">Clear Keychain</button>
@@ -84,10 +80,27 @@
       <div class="card">
         <h2>Import Encrypted Bundle</h2>
         <input type="file" id="bundleInput" accept=".enc" />
+        <label for="bundleInput" class="file-label">Select Encrypted Bundle</label>
+
         <button id="bundleImportBtn">🔓 Decrypt & Import</button>
         <button id="selfCheck">🧪 Self-Check Wallet</button>
       </div>
     </section>
+
+    <section id="howto" class="tab-panel">
+      <div class="card">
+        <h2>📘 How to Use Chaincode</h2>
+        <p><strong>Chaincode Cards</strong> store public or encrypted data like emails, names, secrets, or credentials.</p>
+        <ul>
+          <li>Use the <strong>Create</strong> tab to make a new card</li>
+          <li>Use the <strong>Wallet</strong> to view, export, or delete cards</li>
+          <li>Export bundles as encrypted `.zip.enc` files</li>
+          <li>Import cards or keys later using <strong>Import</strong> or <strong>Keychain</strong></li>
+        </ul>
+        <p><strong>Security Tips:</strong> Always store keys securely. Use strong passphrases. All data stays on your device.</p>
+      </div>
+    </section>
+
   </main>
 
   <script type="module" src="main.js"></script>

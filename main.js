@@ -115,6 +115,9 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
   const timestamp = new Date().toISOString();
   const chaincode_id = await generateChaincodeId(type + value);
   const public_slug = `${chaincode_id.slice(0, 4)}-${chaincode_id.slice(4, 8)}-${chaincode_id.slice(8, 12)}`;
+  const expiration = document.getElementById('expiration').value || null;
+  const notes = document.getElementById('notes').value.trim() || null;
+
 
   let encrypted_value = value;
   let key = null;
@@ -148,8 +151,10 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
       type,
       visibility,
       value: visibility === 'public' ? value : undefined,
-      encrypted_value: visibility === 'private' ? encrypted_value : undefined
-    }
+      encrypted_value: visibility === 'private' ? encrypted_value : undefined,
+      expiration,
+      notes
+    },
   };
 
   addCard(card);
@@ -167,8 +172,11 @@ function renderWallet() {
     el.innerHTML = `
       <label><input type="checkbox" class="card-check" data-index="${i}" /> <strong>${card.metadata.type}</strong></label>
       <p><strong>ID:</strong> ${card.public_slug}</p>
-      <p><strong>Status:</strong> Encrypted</p>
-      <button class="unlock-btn" data-index="${i}">Unlock</button>
+      <p><strong>Status:</strong> ${card.metadata.visibility === 'public' ? 'Public' : 'Encrypted'}</p>
+      ${card.metadata.visibility === 'public'
+        ? `<p><strong>Value:</strong> ${card.metadata.value}</p>`
+        : `<button class="unlock-btn" data-index="${i}">Unlock</button>`}
+
     `;
     view.appendChild(el);
   });

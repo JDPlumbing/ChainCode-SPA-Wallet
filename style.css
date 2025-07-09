@@ -56,6 +56,7 @@ form.card,
 .card {
   padding: 2.2rem 2rem 2rem 2rem;
   width: 370px;
+  max-width: 370px;
 }
 
 .card:hover, #key-list .card:hover {
@@ -214,3 +215,73 @@ pre {
   width: 100%;
   box-sizing: border-box;
 }
+textarea, form textarea {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1.5px solid var(--input-border);
+  border-radius: 7px;
+  background: var(--input-bg);
+  color: var(--fg);
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+  transition: border 0.2s, box-shadow 0.2s;
+  outline: none;
+  box-shadow: none;
+  resize: vertical;
+}
+
+textarea:focus, form textarea:focus {
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 2px rgba(0,255,225,0.12);
+}
+input[type="file"] {
+  display: none;
+}
+
+.file-label {
+  display: inline-block;
+  padding: 0.85rem;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+  border-radius: 7px;
+  font-weight: bold;
+  color: #181a20;
+  font-size: 1.08rem;
+  text-align: center;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 1.2rem; /* Match your other buttons */
+  box-shadow: 0 2px 8px rgba(0,255,225,0.08);
+  transition: background 0.2s, color 0.2s;
+  box-sizing: border-box;
+}
+
+
+.file-label:hover {
+  background: linear-gradient(90deg, var(--accent2) 0%, var(--accent) 100%);
+  color: #000;
+}
+.nav-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 buttons per row */
+  gap: 0.8rem;
+  justify-items: center;
+  margin-bottom: 1.5rem;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.nav-tabs button {
+  padding: 0.6rem 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: var(--card-border);
+  color: var(--fg);
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+.nav-tabs button.active { background: var(--accent); color: black; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }

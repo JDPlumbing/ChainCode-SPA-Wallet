@@ -1,2 +1,3 @@
 .DS_Store\n*.zip.enc\n*.key.txt\nnode_modules/\n.env\n.vscode/\n
 sandbox/
+venv/

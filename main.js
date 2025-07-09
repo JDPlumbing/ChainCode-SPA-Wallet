@@ -63,12 +63,21 @@ function setWallet(cards) {
   localStorage.setItem(WALLET_KEY, JSON.stringify(cards));
 }
 function addCard(card) {
+  if (card.metadata.encrypted_value instanceof Uint8Array) {
+    card.metadata.encrypted_value = Array.from(card.metadata.encrypted_value);
+  }
+
   const cards = getWallet();
   if (!cards.some(c => c.public_slug === card.public_slug)) {
     cards.push(card);
     setWallet(cards);
   }
 }
+function clearWallet() {
+  localStorage.removeItem('chaincode_wallet');
+  renderWallet(); // refresh the UI
+}
+
 
 // ------------------ Generator ------------------
 function generateRandomPassword(len = 20) {
@@ -111,17 +120,25 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
   let key = null;
   if (visibility === 'private') {
     key = generateRandomPassword();
-    encrypted_value = await encrypt(value, key);
+    const encrypted = await encrypt(value, key);
+
+    // Store encrypted data safely for JSON
+    encrypted_value = Array.from(encrypted);
+
+    // Save key to keychain
     const id = public_slug.replace(/-/g, '').toLowerCase();
     saveKey(id, key, type);
-    const blob = new Blob([key], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${type}-${public_slug}.key.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    // Trigger .key.txt download
+    const keyBlob = new Blob([key], { type: 'text/plain' });
+    const keyUrl = URL.createObjectURL(keyBlob);
+    const keyLink = document.createElement('a');
+    keyLink.href = keyUrl;
+    keyLink.download = `${type}-${public_slug}.key.txt`;
+    keyLink.click();
+    URL.revokeObjectURL(keyUrl);
   }
+
 
   const card = {
     chaincode_id,
@@ -158,39 +175,38 @@ function renderWallet() {
 }
 
 document.addEventListener('click', async (e) => {
-  if (e.target.classList.contains('unlock-btn')) {
-const index = e.target.dataset.index;
-const card = getWallet()[index];
-if (!card) return;
+if (e.target.classList.contains('unlock-btn')) {
+  const index = e.target.dataset.index;
+  const card = getWallet()[index];
+  if (!card) return;
 
-const slug = card.public_slug || '';
-const id = slug.replace(/-/g, '').toLowerCase();
+  const slug = card.public_slug || '';
+  const id = slug.replace(/-/g, '').toLowerCase();
 
-let key = unlockWithKeychain(id);
-if (!key) {
-  key = prompt(`No key found for "${card.metadata.type}". Enter decryption key:`);
+  let key = unlockWithKeychain(id);
+  if (!key) {
+    key = prompt(`No key found for "${card.metadata.type}". Enter decryption key:`);
+  }
+  if (!key) return;
+
+  try {
+    let encrypted = card.metadata.encrypted_value;
+
+    if (typeof encrypted === 'string') {
+      encrypted = JSON.parse(encrypted);
+    }
+    if (Array.isArray(encrypted)) {
+      encrypted = new Uint8Array(encrypted);
+    }
+
+    const decrypted = await decrypt(encrypted, key);
+    alert(`🔓 Value: ${new TextDecoder().decode(decrypted)}`);
+  } catch (err) {
+    console.warn('Failed to decrypt with key:', key, err);
+    alert('❌ Failed to decrypt.');
+  }
 }
-if (!key) return;
 
-try {
-  let encrypted = card.metadata.encrypted_value;
-
-  // 🧽 Normalize if needed
-  if (typeof encrypted === 'string') {
-    encrypted = JSON.parse(encrypted);
-  }
-  if (Array.isArray(encrypted)) {
-    encrypted = new Uint8Array(encrypted);
-  }
-
-  const decrypted = await decrypt(encrypted, key);
-  alert(`🔓 Value: ${new TextDecoder().decode(decrypted)}`);
-} catch (err) {
-  console.warn('Failed to decrypt with key:', key, err);
-  alert('❌ Failed to decrypt.');
-}
-
-  }
 });
 
 
@@ -229,6 +245,11 @@ document.getElementById('export-selected').addEventListener('click', async () =>
 });
 
 document.getElementById('import-wallet').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('clear-wallet')?.addEventListener('click', () => {
+  if (confirm('⚠️ This will delete all wallet cards from this device. Continue?')) {
+    clearWallet();
+  }
+});
 
 document.getElementById('fileInput').addEventListener('change', (e) => {
   Array.from(e.target.files).forEach(file => {

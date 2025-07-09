@@ -34,8 +34,8 @@
         <label for="expiration">Expiration Date (optional)</label>
         <input type="date" id="expiration" />
 
-        <label for="notes">Notes (optional)</label>
-        <textarea id="notes" rows="3" placeholder="Paste API keys, login notes, etc."></textarea>
+        <label for="notes">Notes <small>(displayed openly, not encrypted)</small></label>
+        <textarea id="notes" rows="3" placeholder="Dad's SSN, API key for Google, etc..."></textarea>
 
         <label for="value">Value</label>
         <input type="text" id="value" placeholder="Enter value" />
@@ -54,8 +54,8 @@
     <section id="wallet" class="tab-panel">
       <div class="card wallet-container">
         <h2>My Wallet</h2>
-        <input type="file" id="fileInput" accept=".json" multiple />
-        <button id="import-wallet">📥 Import Wallet</button>
+        <!--<input type="file" id="fileInput" accept=".json" multiple />
+        <button id="import-wallet">📥 Import Wallet</button>-->
         <div id="wallet-view"></div>
         <button id="export-selected">📦 Export Selected</button>
         <button id="clear-wallet" class="danger">🗑️ Clear Wallet</button>
@@ -64,17 +64,29 @@
       </div>
     </section>
 
-    <section id="keychain" class="tab-panel">
-      <div class="card">
-        <h2>My Keychain</h2>
-        <input type="file" id="import-keys" accept=".key.txt" multiple />
-        <label for="import-keys" class="file-label">Import Keys</label>
+<section id="keychain" class="tab-panel">
+  <div class="card">
+    <h2>My Keychain</h2>
+    <div id="key-list"></div>
 
-        <div id="key-list"></div>
-        <button id="export-keys">Export All Keys</button>
-        <button id="clear-keys" class="danger">Clear Keychain</button>
-      </div>
-    </section>
+    <!-- Hidden file inputs -->
+    <input type="file" id="import-keys" accept=".key.txt" />
+    <input type="file" id="import-encrypted-keys" accept=".enc" />
+
+    <!-- Grid of actions -->
+    <div class="button-grid">
+      <label for="import-keys" class="file-label"> 🏷️Import<br>🔑Key (.key.txt)</label>
+      <label for="import-encrypted-keys" class="file-label">🔏Import<br>🔓Encrypted🔑Keys</label>
+      
+      <button id="export-keys">📦Export<br>🔓All🔑Keys</button>
+      <button id="export-selected-keys">📦Export<br>✅Selected🔑Keys</button>
+      
+      <button id="export-encrypted-keys">📦Export<br>🔏Encrypted🔐Keychain</button>
+      <button id="clear-keys" class="danger">💣Clear💥<br>❗All Keys🔑</button>
+    </div>
+  </div>
+</section>
+
 
     <section id="import" class="tab-panel">
       <div class="card">
@@ -89,17 +101,64 @@
 
     <section id="howto" class="tab-panel">
       <div class="card">
-        <h2>📘 How to Use Chaincode</h2>
-        <p><strong>Chaincode Cards</strong> store public or encrypted data like emails, names, secrets, or credentials.</p>
+        <h2>📘 How to Use Chaincode Wallet</h2>
+        
+        <p><strong>Chaincode Wallet</strong> is a minimal offline-first vault for encrypted data. Use it to store secrets, environment variables, identity cards, and more — all locally, securely, and sharable when needed.</p>
+
+        <hr />
+
+        <h3>🧾 Create Tab</h3>
+        <p>Create a new card with a <strong>label</strong> (like "API_KEY" or "Garage Code"), an optional expiration date, and a note (shown in plaintext).</p>
+        <p>You can choose to make the card <strong>Public</strong> (value is shown) or <strong>Private</strong> (value is encrypted and saved with a key).</p>
         <ul>
-          <li>Use the <strong>Create</strong> tab to make a new card</li>
-          <li>Use the <strong>Wallet</strong> to view, export, or delete cards</li>
-          <li>Export bundles as encrypted `.zip.enc` files</li>
-          <li>Import cards or keys later using <strong>Import</strong> or <strong>Keychain</strong></li>
+          <li>Private cards download a `.key.txt` file for decryption</li>
+          <li>All cards are automatically saved to your local Wallet</li>
         </ul>
-        <p><strong>Security Tips:</strong> Always store keys securely. Use strong passphrases. All data stays on your device.</p>
+
+        <h3>🪪 Wallet Tab</h3>
+        <p>View and manage your local cards. Each card shows basic info (label, status, expiration, notes). Encrypted cards are masked and can be unlocked if you have the key.</p>
+        <ul>
+          <li>Select cards to export as a <strong>.zip.enc</strong> bundle</li>
+          <li>Perfect for sharing multiple secrets or identity records</li>
+        </ul>
+
+        <h3>🔑 Keychain Tab</h3>
+        <p>The keychain stores your decryption keys for private cards. Keys are matched automatically when unlocking cards.</p>
+        <ul>
+          <li>You can import `.key.txt` files here</li>
+          <li>Or export your full keychain as a backup</li>
+        </ul>
+
+        <h3>📥 Import Tab</h3>
+        <p>Use this to import encrypted bundles shared with you. After selecting a `.zip.enc` file, you’ll be prompted to enter the decryption passphrase.</p>
+        <ul>
+          <li>Only cards you don’t already have will be imported</li>
+          <li>Use the <strong>Self-Check</strong> tool to see which cards are unlockable with your current keys</li>
+        </ul>
+
+        <hr />
+
+        <h3>🔐 How It Works</h3>
+        <ul>
+          <li>All data is stored <strong>locally</strong> in your browser using `localStorage`</li>
+          <li>No cloud, no sync, no tracking — everything is encrypted client-side</li>
+          <li>Private cards use AES-GCM + PBKDF2 for strong encryption</li>
+        </ul>
+
+        <hr />
+
+        <h3>💡 Use Cases</h3>
+        <ul>
+          <li>Personal secret vault (env vars, login keys, backup codes)</li>
+          <li>Share onboarding info with a new teammate securely</li>
+          <li>Store a digital "business card" or identity packet</li>
+          <li>Field techs or freelancers exchanging secure client info</li>
+        </ul>
+
+        <p><em>Chaincode Wallet is yours — no accounts, no servers. Just open it in any browser and start protecting your data.</em></p>
       </div>
     </section>
+
 
   </main>
 

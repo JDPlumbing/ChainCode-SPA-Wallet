@@ -170,14 +170,27 @@ function renderWallet() {
     const el = document.createElement('div');
     el.className = 'card';
     el.innerHTML = `
-      <label><input type="checkbox" class="card-check" data-index="${i}" /> <strong>${card.metadata.type}</strong></label>
-      <p><strong>ID:</strong> ${card.public_slug}</p>
-      <p><strong>Status:</strong> ${card.metadata.visibility === 'public' ? 'Public' : 'Encrypted'}</p>
-      ${card.metadata.visibility === 'public'
-        ? `<p><strong>Value:</strong> ${card.metadata.value}</p>`
-        : `<button class="unlock-btn" data-index="${i}">Unlock</button>`}
-
+      <div class="card-content">
+        <div class="card-meta">
+          <p><strong>Type:</strong> ${card.metadata.type}</p>
+          <p><strong>Status:</strong> ${card.metadata.visibility === 'public' ? 'Public' : 'Encrypted'}</p>
+          <p><strong>Expires:</strong> ${card.metadata.expiration || 'Never'}</p>
+          ${card.metadata.notes ? `<p><strong>Notes:</strong> ${card.metadata.notes}</p>` : ''}
+          ${card.metadata.visibility === 'public'
+            ? `<p><strong>Value:</strong> ${card.metadata.value}</p>`
+            : `<p><strong>Masked:</strong> **** ****</p>`}
+        </div>
+        <div class="card-actions">
+          <label>
+            <input type="checkbox" class="card-check" data-index="${i}" />
+          </label>
+          ${card.metadata.visibility === 'private'
+            ? `<button class="unlock-btn" data-index="${i}">Unlock</button>`
+            : ''}
+        </div>
+      </div>
     `;
+
     view.appendChild(el);
   });
 }
@@ -252,28 +265,28 @@ document.getElementById('export-selected').addEventListener('click', async () =>
   URL.revokeObjectURL(url);
 });
 
-document.getElementById('import-wallet').addEventListener('click', () => document.getElementById('fileInput').click());
+//document.getElementById('import-wallet').addEventListener('click', () => document.getElementById('fileInput').click());
 document.getElementById('clear-wallet')?.addEventListener('click', () => {
   if (confirm('⚠️ This will delete all wallet cards from this device. Continue?')) {
     clearWallet();
   }
 });
 
-document.getElementById('fileInput').addEventListener('change', (e) => {
-  Array.from(e.target.files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = evt => {
-      try {
-        const card = JSON.parse(evt.target.result);
-        addCard(card);
-        renderWallet();
-      } catch {
-        alert('Invalid card file.');
-      }
-    };
-    reader.readAsText(file);
-  });
-});
+//document.getElementById('fileInput').addEventListener('change', (e) => {
+//  Array.from(e.target.files).forEach(file => {
+//    const reader = new FileReader();
+//    reader.onload = evt => {
+ //     try {
+//        const card = JSON.parse(evt.target.result);
+//        addCard(card);
+//        renderWallet();
+//      } catch {
+//        alert('Invalid card file.');
+//      }
+//    };
+//    reader.readAsText(file);
+//  });
+//});
 
 document.getElementById('import-keys').addEventListener('change', (e) => {
   Array.from(e.target.files).forEach(file => {
@@ -300,11 +313,90 @@ document.getElementById('export-keys').addEventListener('click', () => {
   a.click();
   URL.revokeObjectURL(url);
 });
+document.getElementById('export-encrypted-keys').addEventListener('click', async () => {
+  const keys = getKeychain();
+  if (!Object.keys(keys).length) {
+    return alert('🔑 No keys to export.');
+  }
+
+  const pass = prompt('Enter passphrase to encrypt your keychain:');
+  if (!pass) return;
+
+  try {
+    const encrypted = await encrypt(JSON.stringify(keys), pass);
+    const blob = new Blob([encrypted], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `keychain-encrypted-${Date.now()}.enc`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Failed to encrypt keychain:', err);
+    alert('❌ Failed to export encrypted keychain.');
+  }
+});
 
 document.getElementById('clear-keys').addEventListener('click', () => {
   if (confirm('Clear all keys?')) {
     localStorage.removeItem(KEYCHAIN_KEY);
     renderKeychain();
+  }
+});
+document.getElementById('import-encrypted-keys').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const pass = prompt('Enter decryption passphrase:');
+      if (!pass) return;
+
+      const decrypted = await decrypt(reader.result, pass);
+      const text = new TextDecoder().decode(decrypted);
+      const importedKeys = JSON.parse(text);
+
+      const current = getKeychain();
+      const merged = { ...current, ...importedKeys };
+      setKeychain(merged);
+      renderKeychain();
+      alert(`✅ Imported ${Object.keys(importedKeys).length} keys.`);
+    } catch (err) {
+      console.error('Failed to import encrypted keychain:', err);
+      alert('❌ Failed to decrypt or parse keychain.');
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+});
+document.getElementById('export-selected-keys').addEventListener('click', async () => {
+  const keys = getKeychain();
+  const selectedIds = Array.from(document.querySelectorAll('.key-check:checked'))
+    .map(cb => cb.dataset.id);
+  
+  if (!selectedIds.length) return alert('No keys selected.');
+
+  const selected = {};
+  selectedIds.forEach(id => {
+    if (keys[id]) selected[id] = keys[id];
+  });
+
+  const pass = prompt('Enter passphrase to encrypt selected keys:');
+  if (!pass) return;
+
+  try {
+    const encrypted = await encrypt(JSON.stringify(selected), pass);
+    const blob = new Blob([encrypted], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `keychain-selected-${Date.now()}.enc`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Failed to encrypt selected keys:', err);
+    alert('❌ Failed to export selected keys.');
   }
 });
 
@@ -317,11 +409,15 @@ function renderKeychain() {
     card.className = 'card';
     const shortId = id.slice(0, 4) + '-' + id.slice(4, 8) + '-' + id.slice(8, 12);
     card.innerHTML = `
-      <h3>🔖 ${data.type}</h3>
+      <div class="keycard-top">
+        <input type="checkbox" class="key-check" data-id="${id}" />
+        <h3>🔖 ${data.type}</h3>
+      </div>
       <p><strong>Slug:</strong> ${shortId}</p>
       <p><strong>Status:</strong> Locked</p>
       <input type="password" class="key-field" value="${data.value}" readonly />
     `;
+
     list.appendChild(card);
   });
 }

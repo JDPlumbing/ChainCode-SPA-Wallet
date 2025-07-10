@@ -1,7 +1,6 @@
 // ✅ main.js — unified all-in-one engine
 import { blake2b } from 'https://esm.sh/@noble/hashes/blake2b';
-
-const zip = new JSZip();
+import JSZip from 'https://esm.sh/jszip@3.10.1';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -35,6 +34,18 @@ async function decrypt(buffer, password = 'default') {
   const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
   return new Uint8Array(decrypted);
 }
+async function importDecryptedKeychain(decryptedText) {
+  try {
+    const parsed = JSON.parse(typeof decryptedText === "string" ? decryptedText : new TextDecoder().decode(decryptedText));
+    const current = getKeychain();
+    const merged = { ...current, ...parsed };
+    setKeychain(merged);
+    alert(`✅ Imported ${Object.keys(parsed).length} key(s) into keychain.`);
+  } catch (err) {
+    console.error("Failed to import decrypted keychain:", err);
+    alert("❌ Could not import keychain.");
+  }
+}
 
 // ------------------ Keychain ------------------
 const KEYCHAIN_KEY = 'chaincode_keychain';
@@ -53,9 +64,37 @@ function unlockWithKeychain(id) {
   const kc = getKeychain();
   return kc[id]?.value || null;
 }
+function renderKeychain() {
+  const keys = getKeychain();
+  const list = document.getElementById('key-list');
+  if (!list) {
+    console.error('key-list element not found');
+    return;
+  }
+  list.innerHTML = '';
+
+  Object.entries(keys).forEach(([id, data]) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const shortId = id.slice(0, 4) + '-' + id.slice(4, 8) + '-' + id.slice(8, 12);
+
+    card.innerHTML = `
+      <div class="keycard-top">
+        <input type="checkbox" class="key-check" data-id="${id}" />
+        <h3>🔑 ${data.type}</h3>
+      </div>
+      <p><strong>Slug:</strong> ${shortId}</p>
+      <p><strong>Status:</strong> Locked</p>
+      <input type="password" class="key-field" value="${data.value}" readonly />
+    `;
+
+    list.appendChild(card);
+  });
+}
 
 // ------------------ Wallet ------------------
 const WALLET_KEY = 'chaincode_wallet';
+
 function getWallet() {
   return JSON.parse(localStorage.getItem(WALLET_KEY) || '[]');
 }
@@ -77,7 +116,6 @@ function clearWallet() {
   localStorage.removeItem('chaincode_wallet');
   renderWallet(); // refresh the UI
 }
-
 
 // ------------------ Generator ------------------
 function generateRandomPassword(len = 20) {
@@ -164,36 +202,38 @@ document.getElementById('card-form').addEventListener('submit', async (e) => {
 
 function renderWallet() {
   const cards = getWallet();
-  const view = document.getElementById('wallet-view');
+  const view = document.getElementById('wallet-scroll');
+  if (!view) {
+    console.error('wallet-scroll element not found');
+    return;
+  }
   view.innerHTML = '';
+
   cards.forEach((card, i) => {
     const el = document.createElement('div');
     el.className = 'card';
+    const visibility = card.metadata.visibility;
+
     el.innerHTML = `
-      <div class="card-content">
-        <div class="card-meta">
-          <p><strong>Type:</strong> ${card.metadata.type}</p>
-          <p><strong>Status:</strong> ${card.metadata.visibility === 'public' ? 'Public' : 'Encrypted'}</p>
-          <p><strong>Expires:</strong> ${card.metadata.expiration || 'Never'}</p>
-          ${card.metadata.notes ? `<p><strong>Notes:</strong> ${card.metadata.notes}</p>` : ''}
-          ${card.metadata.visibility === 'public'
-            ? `<p><strong>Value:</strong> ${card.metadata.value}</p>`
-            : `<p><strong>Masked:</strong> **** ****</p>`}
-        </div>
-        <div class="card-actions">
-          <label>
-            <input type="checkbox" class="card-check" data-index="${i}" />
-          </label>
-          ${card.metadata.visibility === 'private'
-            ? `<button class="unlock-btn" data-index="${i}">Unlock</button>`
-            : ''}
-        </div>
+      <div class="keycard-top">
+        <input type="checkbox" class="card-check" data-index="${i}" />
+        <h3>🔒 ${card.metadata.type}</h3>
       </div>
+      <p><strong>Status:</strong> ${visibility === 'public' ? 'Public' : 'Encrypted'}</p>
+      <p><strong>Expires:</strong> ${card.metadata.expiration || 'Never'}</p>
+      ${card.metadata.notes ? `<p><strong>Notes:</strong> ${card.metadata.notes}</p>` : ''}
+      ${visibility === 'public'
+        ? `<p><strong>Value:</strong> ${card.metadata.value}</p>`
+        : `<p><strong>Masked:</strong> **** ****</p>`}
+      ${visibility === 'private'
+        ? `<button class="unlock-btn" data-index="${i}">🔓 Unlock</button>`
+        : ''}
     `;
 
     view.appendChild(el);
   });
 }
+
 
 document.addEventListener('click', async (e) => {
 if (e.target.classList.contains('unlock-btn')) {
@@ -230,7 +270,6 @@ if (e.target.classList.contains('unlock-btn')) {
 
 });
 
-
 document.getElementById('export-selected').addEventListener('click', async () => {
   const cards = getWallet();
   const selected = Array.from(document.querySelectorAll('.card-check:checked')).map(cb => cards[cb.dataset.index]);
@@ -262,31 +301,16 @@ document.getElementById('export-selected').addEventListener('click', async () =>
   a.href = url;
   a.download = `chaincode-bundle-${Date.now()}.zip.enc`;
   a.click();
+  saveLinkAfterExport(a.download, "encrypted-custom-chaincode-bundle");
+
   URL.revokeObjectURL(url);
 });
 
-//document.getElementById('import-wallet').addEventListener('click', () => document.getElementById('fileInput').click());
 document.getElementById('clear-wallet')?.addEventListener('click', () => {
   if (confirm('⚠️ This will delete all wallet cards from this device. Continue?')) {
     clearWallet();
   }
 });
-
-//document.getElementById('fileInput').addEventListener('change', (e) => {
-//  Array.from(e.target.files).forEach(file => {
-//    const reader = new FileReader();
-//    reader.onload = evt => {
- //     try {
-//        const card = JSON.parse(evt.target.result);
-//        addCard(card);
-//        renderWallet();
-//      } catch {
-//        alert('Invalid card file.');
-//      }
-//    };
-//    reader.readAsText(file);
-//  });
-//});
 
 document.getElementById('import-keys').addEventListener('change', (e) => {
   Array.from(e.target.files).forEach(file => {
@@ -298,43 +322,11 @@ document.getElementById('import-keys').addEventListener('change', (e) => {
       const type = parts[0] || 'Unknown';
       saveKey(id, key, type);
       renderKeychain();
+      showToast(`✅ Imported key for "${type}"`);
+
     };
     reader.readAsText(file);
   });
-});
-
-document.getElementById('export-keys').addEventListener('click', () => {
-  const keys = getKeychain();
-  const blob = new Blob([JSON.stringify(keys, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `keychain-export-${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-});
-document.getElementById('export-encrypted-keys').addEventListener('click', async () => {
-  const keys = getKeychain();
-  if (!Object.keys(keys).length) {
-    return alert('🔑 No keys to export.');
-  }
-
-  const pass = prompt('Enter passphrase to encrypt your keychain:');
-  if (!pass) return;
-
-  try {
-    const encrypted = await encrypt(JSON.stringify(keys), pass);
-    const blob = new Blob([encrypted], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `keychain-encrypted-${Date.now()}.enc`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error('Failed to encrypt keychain:', err);
-    alert('❌ Failed to export encrypted keychain.');
-  }
 });
 
 document.getElementById('clear-keys').addEventListener('click', () => {
@@ -391,93 +383,355 @@ document.getElementById('export-selected-keys').addEventListener('click', async 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `keychain-selected-${Date.now()}.enc`;
+    a.download = `custom-keychain-${Date.now()}.enc`;
     a.click();
+    saveLinkAfterExport(a.download, "encrypted-custom-keychain");
+
     URL.revokeObjectURL(url);
   } catch (err) {
     console.error('Failed to encrypt selected keys:', err);
     alert('❌ Failed to export selected keys.');
   }
 });
+document.getElementById('delete-selected-cards').addEventListener('click', () => {
+  const cards = getWallet();
+  const selectedIndexes = Array.from(document.querySelectorAll('.card-check:checked'))
+    .map(cb => parseInt(cb.dataset.index));
 
-function renderKeychain() {
+  if (!selectedIndexes.length) return alert('No cards selected to delete.');
+
+  if (!confirm('Are you sure you want to delete the selected cards?')) return;
+
+  const updatedCards = cards.filter((_, i) => !selectedIndexes.includes(i));
+  setWallet(updatedCards);
+  renderWallet();
+});
+document.getElementById('delete-selected-keys').addEventListener('click', () => {
   const keys = getKeychain();
-  const list = document.getElementById('key-list');
-  list.innerHTML = '';
-  Object.entries(keys).forEach(([id, data]) => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    const shortId = id.slice(0, 4) + '-' + id.slice(4, 8) + '-' + id.slice(8, 12);
-    card.innerHTML = `
-      <div class="keycard-top">
-        <input type="checkbox" class="key-check" data-id="${id}" />
-        <h3>🔖 ${data.type}</h3>
-      </div>
-      <p><strong>Slug:</strong> ${shortId}</p>
-      <p><strong>Status:</strong> Locked</p>
-      <input type="password" class="key-field" value="${data.value}" readonly />
-    `;
+  const selectedIds = Array.from(document.querySelectorAll('.key-check:checked'))
+    .map(cb => cb.dataset.id);
 
-    list.appendChild(card);
+  if (!selectedIds.length) return alert('No keys selected to delete.');
+
+  if (!confirm('Are you sure you want to delete the selected keys?')) return;
+
+  selectedIds.forEach(id => delete keys[id]);
+
+  setKeychain(keys);
+  renderKeychain();
+});
+document.getElementById('import-bundle')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    const pass = prompt('Enter passphrase to decrypt bundle:');
+    if (!pass) return;
+
+    const encrypted = new Uint8Array(await file.arrayBuffer());
+    const decryptedZip = await decryptZipBundle(encrypted, pass);
+    if (!decryptedZip) {
+      showToast("❌ Failed to decrypt bundle.", "#ff4757");
+      return;
+    }
+
+    await importDecryptedZip(decryptedZip);
+    renderWallet();
+    showToast("✅ Bundle imported successfully!");
+  } catch (err) {
+    console.error('Failed to import .zip.enc bundle:', err);
+    showToast("❌ Unexpected error during import.", "#ff4757");
+  } finally {
+    e.target.value = ''; // reset input
+  }
+});
+
+const selfCheckBtn = document.getElementById('selfCheck');
+if (selfCheckBtn) {
+  selfCheckBtn.addEventListener('click', () => {
+    const wallet = getWallet();
+    const keychain = getKeychain();
+    const matches = wallet.filter(c => keychain[c.public_slug.replace(/-/g, '').toLowerCase()]);
+    alert(`🧪 ${matches.length} of ${wallet.length} cards have matching keys.`);
   });
 }
 
-document.getElementById('bundleImportBtn').addEventListener('click', () => {
-  const fileInput = document.getElementById('bundleInput');
-  const file = fileInput.files[0];
-  if (!file) return alert('No file selected');
+// === 🧷 My Links Logic ===
 
-  const reader = new FileReader();
-  reader.onload = async () => {
+const linkStorageKey = 'chaincode_links';
+const addLinkBtn = document.getElementById('add-link');
+const clearLinksBtn = document.getElementById('clear-links');
+
+function loadLinksFromStorage() {
+  const raw = localStorage.getItem(linkStorageKey);
+  return raw ? JSON.parse(raw) : {};
+}
+
+function saveLinksToStorage(links) {
+  localStorage.setItem(linkStorageKey, JSON.stringify(links));
+}
+
+function renderLinksUI() {
+  const links = loadLinksFromStorage();
+  const linkListEl = document.getElementById('link-list');
+  if (!linkListEl) {
+    console.error('link-list element not found');
+    return;
+  }
+  linkListEl.innerHTML = '';
+
+  if (Object.keys(links).length === 0) {
+    linkListEl.innerHTML = `<p style="color:#888;">No saved links yet.</p>`;
+    return;
+  }
+
+  Object.entries(links).forEach(([id, link]) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const content = document.createElement('div');
+    content.className = 'card-content';
+
+    const meta = document.createElement('div');
+    meta.className = 'card-meta';
+    meta.innerHTML = `
+      <h3>${link.label || '(Untitled Link)'}</h3>
+      <p><strong>Filename:</strong> ${link.filename}</p>
+      <p><strong>Notes:</strong> ${link.notes || '-'}</p>
+      <p class="status">Saved: ${new Date(link.created).toLocaleString()}</p>
+    `;
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    const previewBtn = document.createElement('button');
+    previewBtn.textContent = '👁 Preview';
+    previewBtn.addEventListener('click', () => {
+      const links = loadLinksFromStorage();
+      const l = links[id];
+      alert(`Label: ${l.label}\nFilename: ${l.filename}\nNotes: ${l.notes}`);
+    });
+
+    const shareBtn = document.createElement('button');
+    shareBtn.textContent = '📤 Share';
+    shareBtn.addEventListener('click', () => {
+      const links = loadLinksFromStorage();
+      const l = links[id];
+      const shareData = {
+        title: `Chaincode Bundle: ${l.label}`,
+        text: `Here's the bundle: ${l.filename}\nNotes: ${l.notes || ''}`,
+      };
+
+      if (navigator.share) {
+        navigator.share(shareData).catch(err => console.warn("Share canceled or failed:", err));
+      } else {
+        navigator.clipboard.writeText(`${l.filename}`).then(() => {
+          alert("📋 Filename copied to clipboard. Paste into text or email manually.");
+        });
+      }
+    });
+
+    actions.appendChild(previewBtn);
+    actions.appendChild(shareBtn);
+    content.appendChild(meta);
+    content.appendChild(actions);
+    card.appendChild(content);
+    linkListEl.appendChild(card);
+  });
+}
+
+
+function addLink(label = 'Sample Bundle', filename = 'bundle.zip.enc', notes = '') {
+  const links = loadLinksFromStorage();
+  const id = Date.now().toString(36);
+  links[id] = {
+    label,
+    filename,
+    notes,
+    created: new Date().toISOString()
+  };
+  saveLinksToStorage(links);
+  renderLinksUI();
+}
+
+window.previewLink = function (id) {
+  const links = loadLinksFromStorage();
+  const link = links[id];
+  alert(`Label: ${link.label}\nFilename: ${link.filename}\nNotes: ${link.notes}`);
+};
+
+window.shareLink = function (id) {
+  const links = loadLinksFromStorage();
+  const link = links[id];
+
+  const shareData = {
+    title: `Chaincode Bundle: ${link.label}`,
+    text: `Here's the bundle: ${link.filename}\nNotes: ${link.notes || ''}`,
+  };
+
+  if (navigator.share) {
+    navigator.share(shareData).catch(err => console.warn("Share canceled or failed:", err));
+  } else {
+    navigator.clipboard.writeText(`${link.filename}`).then(() => {
+      alert("📋 Filename copied to clipboard. Paste into text or email manually.");
+    });
+  }
+};
+
+
+
+// Helper functions for zip bundle decryption and import
+async function decryptZipBundle(encrypted, passphrase) {
+  try {
+    const decrypted = await decrypt(encrypted, passphrase);
+    return decrypted;
+  } catch (err) {
+    console.error('Failed to decrypt zip bundle:', err);
+    return null;
+  }
+}
+
+async function importDecryptedZip(decryptedZip) {
+  try {
+    const zip = new JSZip();
+    const loadedZip = await zip.loadAsync(decryptedZip);
+    
+    // Process the zip contents
+    const files = Object.keys(loadedZip.files);
+    let importedCount = 0;
+    
+    for (const filename of files) {
+      if (filename.startsWith('cards/') && filename.endsWith('.json')) {
+        const content = await loadedZip.files[filename].async('text');
+        const card = JSON.parse(content);
+        addCard(card);
+        importedCount++;
+      }
+    }
+    
+    renderWallet();
+    alert(`✅ Imported ${importedCount} cards from bundle.`);
+  } catch (err) {
+    console.error('Failed to import decrypted zip:', err);
+    alert('❌ Failed to import bundle contents.');
+  }
+}
+function showToast(msg, color = "#00ffe1") {
+  const toast = document.createElement("div");
+  toast.textContent = msg;
+  toast.style.position = "fixed";
+  toast.style.bottom = "2rem";
+  toast.style.left = "50%";
+  toast.style.transform = "translateX(-50%)";
+  toast.style.padding = "1rem 2rem";
+  toast.style.background = color;
+  toast.style.color = "#000";
+  toast.style.fontWeight = "bold";
+  toast.style.borderRadius = "8px";
+  toast.style.zIndex = 9999;
+  toast.style.boxShadow = "0 0 12px rgba(0,255,225,0.4)";
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ✅ This should be a standalone function, not nested inside another
+function saveLinkAfterExport(filename, type = "wallet") {
+  const links = loadLinksFromStorage();
+  const id = Date.now().toString(36);
+  const label = prompt("Name this export? (optional)") || `Unnamed Export – ${new Date().toLocaleString()}`;
+
+  links[id] = {
+    label,
+    filename,
+    type,
+    notes: "Auto-added after export",
+    created: new Date().toISOString()
+  };
+
+  saveLinksToStorage(links);
+  renderLinksUI();
+}
+
+// ✅ This part belongs at top-level (not inside importLink)
+let pendingLinkId = null;
+const linkImportInput = document.getElementById('link-import-input');
+
+function importLink(id) {
+  pendingLinkId = id;
+  linkImportInput.click();
+}
+
+if (linkImportInput) {
+  linkImportInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file || !pendingLinkId) return;
+
     try {
-      const pass = prompt('Enter decryption key:');
-      const decrypted = await decrypt(reader.result, pass);
-      const zip = await JSZip.loadAsync(decrypted);
-      const folder = zip.folder('cards');
-      const wallet = getWallet();
-      let count = 0;
-      for (const file of Object.values(folder.files)) {
-        try {
-          const text = await file.async('string');
-          if (!text.trim()) {
-            console.warn(`⚠️ Skipping empty file: ${file.name}`);
-            continue;
-          }
+      const encrypted = new Uint8Array(await file.arrayBuffer());
+      const passphrase = prompt("Enter passphrase to decrypt bundle:");
+      if (!passphrase) return;
 
-          const card = JSON.parse(text);
+      const decryptedZip = await decryptZipBundle(encrypted, passphrase);
+      if (!decryptedZip) return alert("❌ Decryption failed.");
 
-          if (!card.chaincode_id || !card.public_slug) {
-            console.warn(`⚠️ Invalid card skipped: ${file.name}`);
-            continue;
-          }
+      const link = loadLinksFromStorage()[pendingLinkId];
+      if (!link) return alert("❌ Link not found.");
 
-          if (!wallet.some(w => w.chaincode_id === card.chaincode_id)) {
-            wallet.push(card);
-            count++;
-          }
-        } catch (err) {
-          console.warn(`⚠️ Could not process ${file.name}:`, err);
-        }
+      if (link.type === 'wallet' || link.type === 'encrypted-custom-chaincode-bundle') {
+        await importDecryptedZip(decryptedZip);
+      } else if (link.type.includes('keychain')) {
+        await importDecryptedKeychain(decryptedZip);
+      } else {
+        alert("❓ Unknown link type.");
+      }
+      if (link.type === 'wallet' || link.type === 'encrypted-custom-chaincode-bundle') {
+        await importDecryptedZip(decryptedZip);
+        renderWallet();
+        showToast("✅ Wallet bundle imported!");
+      } else if (link.type.includes('keychain')) {
+        await importDecryptedKeychain(decryptedZip);
+        renderKeychain();
+        showToast("✅ Keychain imported!");
+      } else {
+        showToast("❓ Unknown link type", "#ff4757");
       }
 
-      setWallet(wallet);
-      renderWallet();
-      alert(`✅ Imported ${count} new cards.`);
+
+
     } catch (err) {
       console.error(err);
-      alert('❌ Failed to import bundle: ' + err.message);
+      alert("❌ Error during import.");
+    } finally {
+      linkImportInput.value = '';
+      pendingLinkId = null;
     }
-  };
-  reader.readAsArrayBuffer(file);
-});
+  });
+}
 
-document.getElementById('selfCheck').addEventListener('click', () => {
-  const wallet = getWallet();
-  const keychain = getKeychain();
-  const matches = wallet.filter(c => keychain[c.public_slug.replace(/-/g, '').toLowerCase()]);
-  alert(`🧪 ${matches.length} of ${wallet.length} cards have matching keys.`);
-});
+
+
+
+if (addLinkBtn) addLinkBtn.onclick = () => {
+  const label = prompt("Label for this saved export? (e.g., 'company login's bundle')") || 'Unnamed Export';
+  const filename = prompt("Actual filename after Exporting from Wallet or Keychain (e.g., 'bundle-2025.enc')") || 'unknown.zip.enc';
+  const notes = prompt("Add any notes or context (optional):") || 'Added manually';
+  if (!label || !filename) return;
+
+  addLink(label, filename, notes);
+};
+
+
+
+if (clearLinksBtn) clearLinksBtn.onclick = () => {
+  if (confirm("Are you sure you want to clear all saved links?")) {
+    localStorage.removeItem(linkStorageKey);
+    renderLinksUI();
+  }
+};
+
 
 // Initial render
 renderWallet();
 renderKeychain();
+// Run on load
+renderLinksUI();

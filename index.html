@@ -2,43 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewp ort" content="width=device-width, initial-scale=1.0" />
   <title>Chaincode SPA</title>
   <link rel="stylesheet" href="style.css" />
-
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<link rel="manifest" href="manifest.json" />
-<link rel="icon" href="icon-192.png" type="image/png" />
-<meta name="theme-color" content="#00ffe1" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" type="image/png" />
+  <meta name="theme-color" content="#00ffe1" />
 
 </head>
 <body>
   <main>
-    <h1>🔐 Chaincode Wallet (SPA)</h1>
-
-    <div class="nav-tabs">
-      <button data-tab="create" class="active">🧾 Create</button>
-      <button data-tab="wallet">🪪 Wallet</button>
-      <button data-tab="keychain">🔑 Keychain</button>
-      <button data-tab="import">📥 Import</button>
-      <button data-tab="howto">📘 How to Use</button>
+    <div class="header">
+      <h1>🔐 Chaincode Wallet (SPA)</h1>
+      <p>Securely store and manage your secrets, keys, and identity cards.</p>
+      <div class="nav-tabs">
+        <button data-tab="create" class="active">🧾 Create</button>
+        <button data-tab="import">📥 Import</button>
+        <button data-tab="wallet">🪪 Wallet</button>
+        <button data-tab="keychain">🔑 Keychain</button>
+        <button data-tab="links">⛓️ My Links</button>
+        <button data-tab="howto">📘 How to Use</button>
+      </div>
     </div>
-
+    
     <section id="create" class="tab-panel active">
-      <div class="card">
-        <h2>Create Chaincode</h2>
+      <div class="card-create">
+        <h2>🧾 Create Chaincode</h2>
+        <p>
+          Create a new Chaincode card to store secrets, keys, or identity information.<br />
+          Choose to make it <strong>public</strong> (value shown) or <strong>private</strong> (value encrypted with a key).<br />
+          Private cards will download a <code>.key.txt</code> file for decryption later.
+        </p>
+        <hr />
+
         <form id="card-form">
-        <label for="type">Label (Type)</label>
-        <input type="text" id="type" placeholder="e.g. AWS_SECRET, Garage Code" />
+          <h3>Card Details</h3>
+          <label for="type">Label/Type</label>
+          <input type="text" id="type" placeholder="e.g. AWS_SECRET, Garage Code" />
 
-        <label for="expiration">Expiration Date (optional)</label>
-        <input type="date" id="expiration" />
+          <label for="expiration">Expiration Date (optional)</label>
+          <input type="date" id="expiration" />
 
-        <label for="notes">Notes <small>(displayed openly, not encrypted)</small></label>
-        <textarea id="notes" rows="3" placeholder="Dad's SSN, API key for Google, etc..."></textarea>
+          <label for="notes">Notes <small>(displayed openly, not encrypted)</small></label>
+          <textarea id="notes" rows="3" placeholder="e.g. Dad's SSN, API key for Google"></textarea>
 
-        <label for="value">Value</label>
-        <input type="text" id="value" placeholder="Enter value" />
+          <label for="value">Value</label>
+          <input type="text" id="value" placeholder="Enter value (e.g. secret, code, password)" />
 
           <label for="visibility">Visibility</label>
           <select id="visibility">
@@ -46,61 +56,131 @@
             <option value="private" selected>Private</option>
           </select>
 
+          <small>
+            <ul>
+              <li><strong>Public:</strong> Value is visible in your Wallet.</li>
+              <li><strong>Private:</strong> Value is encrypted and requires a key to unlock. Manage keys in the Keychain tab.</li>
+            </ul>
+          </small>
+
           <button type="submit">Generate Chaincode</button>
-        </form>
-      </div>
+        </form>      </div>
     </section>
 
     <section id="wallet" class="tab-panel">
-      <div class="card wallet-container">
-        <h2>My Wallet</h2>
-        <!--<input type="file" id="fileInput" accept=".json" multiple />
-        <button id="import-wallet">📥 Import Wallet</button>-->
-        <div id="wallet-view"></div>
-        <button id="export-selected">📦 Export Selected</button>
-        <button id="clear-wallet" class="danger">🗑️ Clear Wallet</button>
-
-
+      <div class="card-wallet">
+        <h2>🪪 My Wallet</h2>
+        <p>View and manage your local Chaincode cards. Each card shows basic info (label, status, expiration, notes). Encrypted cards are masked and can be unlocked if you have the key.</p>
+        <p>Select cards to export as a <strong>.zip.enc</strong> bundle. Perfect for sharing multiple secrets or identity records.</p>
+        <hr />
+        <div class="card-scroll-container" id="wallet-scroll">
+          <!-- Wallet cards will be injected here -->
+        </div>
+      </div>
+      <hr />
+      <div class="button-stack">
+        <p>Select cards to export as a <strong>.zip.enc</strong> bundle.<br />Perfect for sharing multiple secrets or identity records.</p>
+        <button id="export-selected">📤 Export Selected Cards</button>
+        <hr />
+        <p>Select cards to delete from your Wallet.<br />This action cannot be undone!</p>
+        <button id="delete-selected-cards" class="danger">💥 Delete Selected 💣</button>
+        <hr />
+        <p>Clear all cards from your Wallet.<br />This action cannot be undone!</p>
+        <button id="clear-wallet" class="danger">💥 Clear All Cards ☄️</button>
       </div>
     </section>
 
-<section id="keychain" class="tab-panel">
-  <div class="card">
-    <h2>My Keychain</h2>
-    <div id="key-list"></div>
-
-    <!-- Hidden file inputs -->
-    <input type="file" id="import-keys" accept=".key.txt" />
-    <input type="file" id="import-encrypted-keys" accept=".enc" />
-
-    <!-- Grid of actions -->
-    <div class="button-grid">
-      <label for="import-keys" class="file-label"> 🏷️Import<br>🔑Key (.key.txt)</label>
-      <label for="import-encrypted-keys" class="file-label">🔏Import<br>🔓Encrypted🔑Keys</label>
-      
-      <button id="export-keys">📦Export<br>🔓All🔑Keys</button>
-      <button id="export-selected-keys">📦Export<br>✅Selected🔑Keys</button>
-      
-      <button id="export-encrypted-keys">📦Export<br>🔏Encrypted🔐Keychain</button>
-      <button id="clear-keys" class="danger">💣Clear💥<br>❗All Keys🔑</button>
-    </div>
-  </div>
-</section>
-
+    <section id="keychain" class="tab-panel">
+      <div class="card-keychain">
+        <h2>🔑 My Keychain</h2>
+        <p>Manage your decryption keys for private cards. Keys are matched automatically when unlocking cards.<br />
+        Use the buttons below to export or delete keys as needed.</p>
+        <hr />
+        <div class="card-scroll-container" id="key-scroll">
+          <div id="key-list"></div>
+        </div>
+        <hr />
+        <div class="button-stack">
+          <button id="export-selected-keys">📤 Export Selected Keys</button>
+          <hr />
+          <p>Select keys to delete from your Keychain.<br />This action cannot be undone!</p>
+          <button id="delete-selected-keys" class="danger">💥 Delete Selected 💣</button>
+          <hr />
+          <p>Clear all keys from your Keychain.<br />This action cannot be undone!</p>
+          <button id="clear-keys" class="danger">💥 Clear All Keys ☄️</button>
+        </div>      </div>
+    </section>
 
     <section id="import" class="tab-panel">
-      <div class="card">
-        <h2>Import Encrypted Bundle</h2>
-        <input type="file" id="bundleInput" accept=".enc" />
-        <label for="bundleInput" class="file-label">Select Encrypted Bundle</label>
+      <div class="card-import">
+        <h2>📥 Import</h2>
+        <p>Import keys, encrypted bundles, or run self-checks to manage your Chaincode Wallet.</p>
+        <hr />
+        <div class="button-stack">
 
-        <button id="bundleImportBtn">🔓 Decrypt & Import</button>
+        <!-- Import .key.txt Files -->
+        <div class="import-group">
+        <input type="file" id="import-keys" accept=".key.txt" style="display: none;" />
+        <label for="import-keys" class="file-label">🔑 Import Key File (.key.txt)</label>
+        <p>
+          <strong>What is this?</strong> When you create a private Chaincode card, you’ll download a <code>.key.txt</code> file. 
+          <br>
+          <strong>How to use:</strong> Click above to upload your <code>.key.txt</code> file and add its key to your Keychain.
+        </p>
+        </div>
+        <hr />
+        <!-- Import Encrypted Keychain -->
+        <div class="import-group">
+        <input type="file" id="import-encrypted-keys" accept=".enc" style="display: none;" />
+        <label for="import-encrypted-keys" class="file-label">🔏 Import Encrypted Keychain (.enc)</label>
+        <p>
+          <strong>What is this?</strong> If you exported your full Keychain as an encrypted backup, it will be a <code>.enc</code> file.
+          <br>
+          <strong>How to use:</strong> Click above to upload and restore your encrypted Keychain backup.
+        </p>
+        </div>
+        <hr />
+        <!-- Import Encrypted Bundle -->
+        <div class="import-group">
+        <input type="file" id="import-bundle" accept=".zip.enc" style="display: none;" />
+        <label for="import-bundle" class="file-label">📦 Import Encrypted Bundle (.zip.enc)</label>
+        <p>
+          <strong>What is this?</strong> Bundles are collections of encrypted cards shared with you (as <code>.zip.enc</code> files).
+          <br>
+          <strong>How to use:</strong> Click above to upload a bundle and import new cards into your Wallet.
+        </p>
+        </div>
+        <hr />
+        <!-- Self-Check Tool -->
+        <div class="import-group">
         <button id="selfCheck">🧪 Self-Check Wallet</button>
+        <p>
+          <strong>What is this?</strong> See which cards in your Wallet can be unlocked with your current keys.
+          <br>
+          <strong>How to use:</strong> Click above to run a check and view results.
+        </p>
+        </div>
       </div>
+      </div>
+    </section>
+
+    <section id="links" class="tab-panel">
+      <div class="card-mylinks">
+        <h2>⛓️ My Links</h2>
+        <p style="margin-bottom: 1rem;">These are references to local encrypted bundles you've exported.</p>
+        <hr />
+        <div class="card-scroll-container" id="links-scroll">
+          <div id="link-list"></div>
+        </div>
+        <hr />
+        <div class="button-stack">
+          <button id="add-link">🔗 Add Link Manually</button>
+          <button id="clear-links" class="danger">💥 Clear All Links</button>
+        </div>      </div>
     </section>
 
     <section id="howto" class="tab-panel">
-      <div class="card">
+      <div class="card-howto">
         <h2>📘 How to Use Chaincode Wallet</h2>
         
         <p><strong>Chaincode Wallet</strong> is a minimal offline-first vault for encrypted data. Use it to store secrets, environment variables, identity cards, and more — all locally, securely, and sharable when needed.</p>
@@ -114,21 +194,21 @@
           <li>Private cards download a `.key.txt` file for decryption</li>
           <li>All cards are automatically saved to your local Wallet</li>
         </ul>
-
+        <hr />
         <h3>🪪 Wallet Tab</h3>
         <p>View and manage your local cards. Each card shows basic info (label, status, expiration, notes). Encrypted cards are masked and can be unlocked if you have the key.</p>
         <ul>
           <li>Select cards to export as a <strong>.zip.enc</strong> bundle</li>
           <li>Perfect for sharing multiple secrets or identity records</li>
         </ul>
-
+        <hr />
         <h3>🔑 Keychain Tab</h3>
         <p>The keychain stores your decryption keys for private cards. Keys are matched automatically when unlocking cards.</p>
         <ul>
           <li>You can import `.key.txt` files here</li>
           <li>Or export your full keychain as a backup</li>
         </ul>
-
+        <hr />
         <h3>📥 Import Tab</h3>
         <p>Use this to import encrypted bundles shared with you. After selecting a `.zip.enc` file, you’ll be prompted to enter the decryption passphrase.</p>
         <ul>
@@ -154,12 +234,39 @@
           <li>Store a digital "business card" or identity packet</li>
           <li>Field techs or freelancers exchanging secure client info</li>
         </ul>
+        <hr />
+
+        <h3>📎 Passphrase Strategy</h3>
+          <p>
+            Chaincode Wallet is designed to securely encrypt, save, and store your secrets offline. 
+            But it's important to remember: <strong>if you lose your passphrase, you lose access to the encrypted data</strong>.
+          </p>
+          <p>
+            To reduce risk while keeping control, you can create a <strong>Chaincode card just for your passphrase</strong>:
+          </p>
+          <ul>
+            <li>Label it something like <code>Master Vault Passphrase</code></li>
+            <li>Set it to <strong>Private</strong> so it's encrypted with a key</li>
+            <li>Export it like any other card</li>
+          </ul>
+          <p>
+            This allows you to build <strong>layered, recoverable access</strong>:
+            store a passphrase inside a card, export that encrypted, and unlock it later when needed — even after clearing your wallet.
+          </p>
+          <p>
+            You only need to remember one master key to unlock the rest. 
+            From that one card, you can unlock passphrases, then bundles, then everything inside — endlessly nestable, fully yours.
+        </p>
 
         <p><em>Chaincode Wallet is yours — no accounts, no servers. Just open it in any browser and start protecting your data.</em></p>
       </div>
     </section>
 
-
+    
+    <footer>
+      <p>Created for YOU - for a sovereign future</p>
+      <p>2025 Chaincode Wallet</p>
+    </footer>
   </main>
 
   <script type="module" src="main.js"></script>
